@@ -100,3 +100,61 @@ const registeruser = asyncHandler(async(req,res)=>{
   }
 )
 
+//controller for logout
+
+const loginuser = asyncHandler(async(req,res) => {
+
+    // req body -> data
+    // username or email
+    // find the user
+    // check password
+    // access and refreshToken
+    // send cookie
+ 
+    const { email, username, password} = req.body
+    console.log (email);
+
+    if(!username && !email) {
+      throw new ApiError (400, "username or email is required")
+    }
+
+    // here is an alternative of above code based on login discussed in video
+    // if(!(username || email)){
+    // throw new ApiError (400, "username or email required")
+    //}
+
+    const user = await user.findone({
+      $or:[{username}, {email}]
+    })
+    if(!user){
+      throw new ApiError (404, "user does not exist")
+    }
+    const ispasswordvalid = await user.ispassworcorrect(password)
+    if(!ispasswordvalid){
+      throw new ApiError (401, "Invalid user credential")
+    }
+
+    const {AccessToken, RefreshToken}= await generateAccessTokenandRefreshToken(user._Id)
+
+    const loggedInuser = await user.findById(user._Id).select ("-password -refreshToken")
+
+    const options = {
+              httponly:true,
+              secure: true
+    }
+
+    return res
+         .status(200)
+         .cookie("AccessToken", AccessToken, options)
+         .cookie("RefreshToken", RefreshToken, options)
+         .json(
+            new ApiError(200,
+              {
+                user:loggedInuser, AccessToken, RefreshToken
+              },
+              "user logged in successfully"
+            )
+         )
+
+  }
+)
