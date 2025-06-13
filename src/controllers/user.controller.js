@@ -220,3 +220,60 @@ const logoutuser = asyncHandler(async(req, res) =>{
       throw new ApiError(401, error?.message || "Invalid Refresh Token")
     }
     })
+
+    //controller for change password
+
+    const changecurrentpassword = asyncHandler(async(req, res)=>{
+    const {oldpassword, newpassword}= req.body
+    const user = await user.findById(req.user?._Id)
+
+    const ispassworcorrect = await user.ispassworcorrect(oldpassword)
+
+    if(!ispassworcorrect){
+      throw new ApiError (400, "Invalid old password")
+    }
+    user.password = newpassword
+    await  user.save({validatebeforsave:false})
+
+    return res
+           .status (200)
+           .json(new ApiResponnse(200, {}, "password change successfully"))
+    }
+  )
+
+  // controller for getcurrent user
+
+  const getcurrentuser = asyncHandler(async(req, res)=> {
+    return res
+          .status(200)
+          .json (new ApiResponnse(
+            200,
+            req.user,
+            "user fitched successfully"
+          ))
+
+  })
+
+  // controller for updateAccount Details
+
+  const updateAccountDetails = asyncHandler(async(req,res)=> {
+
+    const { fullName, email} = req.body
+
+    if(!fullName || email) {
+      throw new ApiError (400, "All field are required")
+    }
+    const user = await user.findByIdandupdate(req.user?._Id,
+      {
+        $set:{
+          fullName,
+          email: email
+        }
+      },
+
+      {new: true}
+    ).select("-password")
+    return res
+    .status(200)
+    .json(new ApiResponnse(200, user, "Account details is updated successfully"))
+  })
